@@ -1,0 +1,2 @@
+# hashpress-reviews
+WordPress Plugin
