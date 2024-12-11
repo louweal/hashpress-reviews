@@ -1,0 +1,24 @@
+{
+    "name": "hashpress-reviews",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "webpack --mode production",
+        "start": "webpack serve --mode development",
+        "watch": "webpack --watch"
+    },
+    "author": "Anneloes Louwe",
+    "license": "ISC",
+    "dependencies": {
+        "@ethersproject/abi": "^5.7.0",
+        "@hashgraph/sdk": "^2.49.2",
+        "hashconnect": "^3.0.13",
+        "path-browserify": "^1.0.1"
+    },
+    "devDependencies": {
+        "process": "^0.11.10",
+        "webpack-cli": "^5.1.4"
+    }
+}
