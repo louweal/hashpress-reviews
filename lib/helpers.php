@@ -6,19 +6,20 @@
  */
 
 
-// function getTitle()
-// {
-//     global $post;
+function update_review_history($post_id, $transaction_id)
+{
+    $current_review_history = get_post_meta($post_id, "hashpress_review_history", true);
 
-//     $title = get_the_title();
-//     if (function_exists('is_product')) {
-//         if (is_product()) {
-//             $product = wc_get_product($post->ID);
-//             $title = $product->get_title();
-//         }
-//     }
-//     return $title;
-// }
+    if (empty($transaction_id)) return;
+
+    if (empty($current_review_history) || !is_array($current_review_history)) {
+        $current_review_history = array();
+    }
+
+    $current_review_history[] = $transaction_id;
+    update_post_meta($post_id, "hashpress_review_history", $current_review_history);
+}
+
 
 function hashpress_reviews_section_function($atts, $shortcode)
 {
@@ -34,27 +35,20 @@ function hashpress_reviews_section_function($atts, $shortcode)
 
     $review_file =  __DIR__ . '/shortcodes/parts/review.php';
 
-    // delete_post_meta($post_id, '_transaction_ids');
-    // delete_post_meta($post_id, '_contract_ids');
-    // delete_post_meta($post_id, '_review_transaction_ids');
-
     // global settings
-
     if ($shortcode) {
         // Define the default attributes
         $atts = shortcode_atts(
             array(
-                'max_reviews' =>  null,
-                'button_text' => null,
+                'max_reviews' =>  6,
+                'button_text' => "Write review",
             ),
             $atts,
-            'realviews_latest_reviews'
+            'hashpress_reviews_latest_reviews'
         );
 
-        $settings = get_option('realviews_settings');
-        $max_reviews = isset($atts['max_reviews']) ? esc_html($atts['max_reviews']) : esc_html($settings['max_reviews']);
-        $max_reviews = intval($max_reviews);
-        $button_text = $atts['button_text'] ? esc_html($atts['button_text']) : esc_html($settings['button_text']);
+        $max_reviews = intval($atts['max_reviews']);
+        $button_text = esc_html($atts['button_text']);
     } else {
         // get data from gutenberg fields
         $max_reviews = get_field("max_reviews");
@@ -66,23 +60,16 @@ function hashpress_reviews_section_function($atts, $shortcode)
         $max_reviews = 1e8;
     }
 
-
-    $transaction_ids = get_post_meta($post_id, '_transaction_ids', true);
-    // debug($transaction_ids);
-
-    $review_transaction_ids = get_post_meta($post_id, '_review_transaction_ids', true);
-    // debug($review_transaction_ids);
-
-    $encodedTransactionIds = base64_encode(json_encode($transaction_ids));     // Encode the JSON string using Base64
+    $transaction_ids = get_post_meta($post_id, 'hashpress_transaction_history', true);
+    $review_history = get_post_meta($post_id, 'hashpress_review_history', true);
 
     ob_start();
 
     if (!is_admin()) {
-
         if ($max_reviews != 0) {
 ?>
-            <section class="hashpress-reviews-section">
-                <?php $num_reviews = $review_transaction_ids ? count($review_transaction_ids) : 0;
+            <section class="hashpress-reviews-section" data-id="<?php echo $post_id; ?>">
+                <?php $num_reviews = $review_history ? count($review_history) : 0;
                 ?>
 
                 <h2>Reviews (<?php echo $num_reviews; ?>)</h2>
@@ -94,7 +81,7 @@ function hashpress_reviews_section_function($atts, $shortcode)
 
                     <?php if ($num_reviews > 0) { ?>
                         <?php for ($i = ($num_reviews - 1); $i >= ($num_reviews - min($num_reviews, $max_reviews)); $i--) {
-                            $review_transaction_id = $review_transaction_ids[$i];
+                            $review_transaction_id = $review_history[$i];
                         ?>
                             <?php
                             if (file_exists($review_file)) {
@@ -134,7 +121,7 @@ function hashpress_reviews_section_function($atts, $shortcode)
                                     <div class="hashpress-reviews-list">
                                         <?php for ($i = ($num_reviews - 1); $i >= 0; $i--) {
                                             // <?php for ($i = 0; $i < $num_reviews; $i++) {
-                                            $review_transaction_id = $review_transaction_ids[$i];
+                                            $review_transaction_id = $review_history[$i];
                                             if (file_exists($review_file)) {
                                                 require $review_file;
                                             } else {
@@ -147,18 +134,11 @@ function hashpress_reviews_section_function($atts, $shortcode)
                         </div><!-- modal -->
                     <?php }; //if
                     ?>
-                    <?php $review_transaction_id_param = isset($_GET['review_transaction_id']) ? $_GET['review_transaction_id'] : null; ?>
-                    <?php if ($review_transaction_id_param) {
-                        add_meta_to_post($post_id, '_review_transaction_ids', $review_transaction_id_param);
-                    ?>
-                        <p>Thanks for your review, it will appear within 10 seconds.</p>
-                    <?php } ?>
+
                     <div class="hashpress-reviews-write-review-wrapper" data-post-id="<?php echo $post_id; ?>">
-                        <?php $review_transaction_id_param = isset($_GET['review_transaction_id']) ? $_GET['review_transaction_id'] : null;
-                        if (!$review_transaction_id_param) { ?>
-                            <div class="btn hashpress-reviews-write-review">Write review</div>
-                            <?php ?>
-                        <?php } ?>
+
+                        <div class="btn hashpress-reviews-write-review">Write review</div>
+
                         <div class="hashpress-reviews-modal">
                             <div class="hashpress-reviews-modal__bg"></div>
                             <div class="hashpress-reviews-modal__inner">

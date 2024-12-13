@@ -4,7 +4,7 @@ Plugin Name: HashPress Reviews
 Description: Integrate Hedera Smart Contracts into your WordPress website to get verifiable reviews.
 Version: 0.1
 Author: HashPress
-Author URI: https://hashpresspioneers.com/
+Author URI: https://hashpress.io/
 */
 
 // Exit if accessed directly.
@@ -12,21 +12,16 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-
 require_once plugin_dir_path(__FILE__) . 'lib/enqueue.php';
 require_once plugin_dir_path(__FILE__) . 'lib/helpers.php';
 require_once plugin_dir_path(__FILE__) . 'lib/acf.php';
+require_once plugin_dir_path(__FILE__) . 'lib/rest.php';
 require_once plugin_dir_path(__FILE__) . 'lib/shortcodes/latest-reviews.php';
 require_once plugin_dir_path(__FILE__) . 'lib/shortcodes/num-reviews.php';
 
-
 // load these only if woocommerce is active
 if (!class_exists('WooCommerce')) return;
-
 require_once plugin_dir_path(__FILE__) . 'lib/product.php';
-
-
-// todo add to pay
 
 function enable_hashpress_core_from_reviews()
 {
@@ -36,7 +31,7 @@ function enable_hashpress_core_from_reviews()
         activate_plugin($core);
     }
 }
-add_action('init', 'enable_hashpress_pay_from_reviews');
+add_action('init', 'enable_hashpress_core_from_reviews');
 
 function enable_hashpress_pay_from_reviews()
 {
