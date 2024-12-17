@@ -18,7 +18,6 @@ require_once plugin_dir_path(__FILE__) . 'lib/product.php';
 require_once plugin_dir_path(__FILE__) . 'lib/acf.php';
 require_once plugin_dir_path(__FILE__) . 'lib/rest.php';
 require_once plugin_dir_path(__FILE__) . 'lib/shortcodes/latest-reviews.php';
-require_once plugin_dir_path(__FILE__) . 'lib/shortcodes/num-reviews.php';
 
 // load these only if woocommerce is active
 if (!class_exists('WooCommerce')) return;

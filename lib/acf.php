@@ -1,20 +1,20 @@
 <?php
 
-add_action('acf/init', 'realviews_latest_reviews_block');
-function realviews_latest_reviews_block()
+add_action('acf/init', 'hashpress_reviews_section_block');
+function hashpress_reviews_section_block()
 {
     // Check function exists.
     if (function_exists('acf_register_block_type')) {
-        // Register the realviews review list block.
+        // Register the block.
         acf_register_block_type(array(
-            'name'              => 'realviews-latest-reviews',
-            'title'             => __('Latest Review List (Realviews)', 'hfh'),
-            'description'       => __('Show all reviews written for this product, post or page (Realviews)', 'hfh'),
-            'render_template'   => dirname(plugin_dir_path(__FILE__)) . '/realviews/blocks/realviews-latest-reviews.php',
+            'name'              => 'hashpress-reviews-section-block',
+            'title'             => __('HashPress Reviews Section', 'hashpress'),
+            'description'       => __('Section for writing and reading HashPress reviews', 'hashpress'),
+            'render_template'   => dirname(plugin_dir_path(__FILE__)) . '/blocks/hashpress-reviews-section.php',
             'mode'              => 'edit',
             'category'          => 'common',
             'icon'              => 'admin-comments',
-            'keywords'          => array('reviews', 'review', 'list', 'realviews', 'latest'),
+            'keywords'          => array('reviews', 'review', 'section', 'hashpress', 'write'),
         ));
     }
 }
@@ -25,8 +25,8 @@ function add_latest_reviews_field_groups()
 {
     if (function_exists('acf_add_local_field_group')) {
         acf_add_local_field_group(array(
-            'key' => 'group_realviews_latest_reviews', // Unique key for the field group
-            'title' => 'Latest Reviews (Realviews)',
+            'key' => 'group_hashpress_reviews_section',
+            'title' => 'HashPress Reviews',
             'fields' => array(
                 array(
                     'key' => 'max_reviews',
@@ -51,7 +51,7 @@ function add_latest_reviews_field_groups()
                     array(
                         'param' => 'block',
                         'operator' => '==',
-                        'value' => 'acf/realviews-latest-reviews',
+                        'value' => 'acf/hashpress-reviews-section-block',
                     ),
                 ),
             ),
@@ -65,7 +65,7 @@ function add_hashpress_reviews_field_groups()
     if (function_exists('acf_add_local_field_group')) {
         if (!acf_get_local_field_group('group_hashpress_pay_store')) {
             acf_add_local_field_group(array(
-                'key' => 'group_hashpress_pay_store', // Unique key for the field group
+                'key' => 'group_hashpress_pay_store',
                 'title' => 'Store field',
                 'fields' => array(
                     array(
