@@ -1,10 +1,13 @@
 <?php
 
-/**
- * Template:			helpers.php
- * Description:			Custom functions used by the plugin
- */
+if (!function_exists('convert_timestamp')) {
+    function convert_timestamp($timestamp)
+    {
+        list($seconds, $milliseconds) = explode('.', $timestamp);
 
+        return date('F Y', $seconds);
+    }
+}
 
 function update_review_history($post_id, $transaction_id)
 {
@@ -18,6 +21,74 @@ function update_review_history($post_id, $transaction_id)
 
     $current_review_history[] = $transaction_id;
     update_post_meta($post_id, "hashpress_review_history", $current_review_history);
+}
+
+function decode_hex_string($hexData)
+{
+    if (substr($hexData, 0, 2) === "0x") {
+        $hexData = substr($hexData, 2);
+    }
+
+    $offsetHex = substr($hexData, 0, 64);
+    $offset = hexdec($offsetHex);
+    $lengthHexStart = ($offset * 2);
+    $lengthHex = substr($hexData, $lengthHexStart, 64);
+    $length = hexdec($lengthHex);
+    $dataHexStart = $lengthHexStart + 64;
+    $dataHex = substr($hexData, $dataHexStart, $length * 2);
+
+    return rtrim(hex2bin($dataHex), "\0");
+}
+
+function parse_transaction_id($transactionId)
+{
+    // Split the transaction ID into account and timestamp parts
+    $splitId = explode("@", $transactionId);
+    $accountId = $splitId[0];
+    $timestamp = str_replace(".", "-", $splitId[1]);
+    return $accountId . "-" . $timestamp;
+}
+
+function fetch_mirrornode_log_data($transactionId)
+{
+    $networks = ["testnet", "mainnet", "previewnet"];
+    $baseUrl = "https://%s.mirrornode.hedera.com/api/v1/contracts/results/%s";
+
+    // Loop over all networks
+    foreach ($networks as $network) {
+        // Construct the URL
+        $url = sprintf($baseUrl, $network, parse_transaction_id($transactionId));
+
+        try {
+            // Fetch data from the MirrorNode API
+            $response = file_get_contents($url); // You could also use cURL if needed
+            if ($response === FALSE) {
+                throw new Exception("Error fetching data from the MirrorNode API");
+            }
+
+            // Decode the JSON response
+            $data = json_decode($response, true);
+
+            // Check for 'logs' in the data
+            if (isset($data["logs"])) {
+                foreach ($data["logs"] as $log) {
+                    // Check for 'data' in each log
+                    if (isset($log["data"])) {
+                        $hexData = $log["data"];
+                        // Decode the hex string
+                        $decodedData = decode_hex_string($hexData);
+                        return ['network' => $network, 'raw' => $hexData, 'reviewData' => $decodedData]; // Return the first valid log
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            // Log the error and continue to the next network
+            error_log($e->getMessage());
+            return null;
+        }
+    }
+
+    return null; // Return null if no data was found in any network
 }
 
 
@@ -60,7 +131,7 @@ function hashpress_reviews_section_function($atts, $shortcode)
         $max_reviews = 1e8;
     }
 
-    $transaction_ids = get_post_meta($post_id, 'hashpress_transaction_history', true);
+    // $transaction_ids = get_post_meta($post_id, 'hashpress_transaction_history', true);
     $review_history = get_post_meta($post_id, 'hashpress_review_history', true);
 
     ob_start();
@@ -68,20 +139,21 @@ function hashpress_reviews_section_function($atts, $shortcode)
     if (!is_admin()) {
         if ($max_reviews != 0) {
 ?>
-            <section class="hashpress-reviews-section" data-id="<?php echo $post_id; ?>">
+            <section class="hashpress-reviews-section" data-id="<?php echo $post_id; ?>" id="reviews">
                 <?php $num_reviews = $review_history ? count($review_history) : 0;
                 ?>
 
                 <h2>Reviews (<?php echo $num_reviews; ?>)</h2>
 
-                <!-- <p style="border:1px solid red; padding: 1rem; margin-top: 1rem; font-style:italic; font-size:14px">Test instructions: Buy this item with HederaPay and 'use' it for the minimum required (demo) timespan of 2 minutes. Then reconnect to this website with the same wallet you bought the item with and a 'Write review' button appears!</p> -->
-
+                <?php echo do_shortcode('[hashpress_connect]');
+                ?>
 
                 <div class="hashpress-reviews-list">
 
                     <?php if ($num_reviews > 0) { ?>
                         <?php for ($i = ($num_reviews - 1); $i >= ($num_reviews - min($num_reviews, $max_reviews)); $i--) {
                             $review_transaction_id = $review_history[$i];
+                            $review_data = fetch_mirrornode_log_data($review_transaction_id); // used in the review_file
                         ?>
                             <?php
                             if (file_exists($review_file)) {
@@ -99,9 +171,8 @@ function hashpress_reviews_section_function($atts, $shortcode)
 
 
                 <div class="hashpress-reviews-actions">
-
                     <?php if ($num_reviews > $max_reviews) { ?>
-                        <div class="btn show-hashpress-reviews-modal"><?php echo $button_text; ?></div>
+                        <div class="btn hashpress-reviews-toggle-modal"><?php echo $button_text; ?></div>
 
                         <div class="hashpress-reviews-modal">
                             <div class="hashpress-reviews-modal__bg"></div>
@@ -120,7 +191,6 @@ function hashpress_reviews_section_function($atts, $shortcode)
                                 <div class="hashpress-reviews-modal__body">
                                     <div class="hashpress-reviews-list">
                                         <?php for ($i = ($num_reviews - 1); $i >= 0; $i--) {
-                                            // <?php for ($i = 0; $i < $num_reviews; $i++) {
                                             $review_transaction_id = $review_history[$i];
                                             if (file_exists($review_file)) {
                                                 require $review_file;
@@ -135,9 +205,8 @@ function hashpress_reviews_section_function($atts, $shortcode)
                     <?php }; //if
                     ?>
 
-                    <div class="hashpress-reviews-write-review-wrapper" data-post-id="<?php echo $post_id; ?>">
-
-                        <div class="btn hashpress-reviews-write-review">Write review</div>
+                    <div class="hashpress-reviews-write-review-wrapper">
+                        <div class="btn hashpress-reviews-toggle-modal hashpress-reviews-write-review"><?php _e('Write review', 'hashpress'); ?></div>
 
                         <div class="hashpress-reviews-modal">
                             <div class="hashpress-reviews-modal__bg"></div>

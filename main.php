@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 require_once plugin_dir_path(__FILE__) . 'lib/enqueue.php';
 require_once plugin_dir_path(__FILE__) . 'lib/helpers.php';
+require_once plugin_dir_path(__FILE__) . 'lib/product.php';
 require_once plugin_dir_path(__FILE__) . 'lib/acf.php';
 require_once plugin_dir_path(__FILE__) . 'lib/rest.php';
 require_once plugin_dir_path(__FILE__) . 'lib/shortcodes/latest-reviews.php';

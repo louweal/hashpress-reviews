@@ -1,7 +1,5 @@
-import { TransferTransaction, Hbar, AccountId } from "@hashgraph/sdk";
+import { AccountId } from "@hashgraph/sdk";
 import { ContractId, ContractExecuteTransaction, ContractFunctionParameters } from "@hashgraph/sdk";
-import { arrayify } from "@ethersproject/bytes";
-import { defaultAbiCoder } from "@ethersproject/abi";
 
 (function () {
     "use strict";
@@ -9,10 +7,7 @@ import { defaultAbiCoder } from "@ethersproject/abi";
     console.log("reviews!");
 
     let transactionHistory = undefined;
-
     let body = document.querySelector("body");
-
-    loadReviews();
 
     window.addEventListener("hashconnectInitDone", async function () {
         console.log("done!");
@@ -36,6 +31,7 @@ import { defaultAbiCoder } from "@ethersproject/abi";
                     let rating;
 
                     const stars = ratingWrapper.querySelectorAll(".hashpress-reviews-stars__star");
+                    console.log(stars);
                     [...stars].forEach((star) => {
                         star.addEventListener("click", function () {
                             // reset active states
@@ -44,6 +40,7 @@ import { defaultAbiCoder } from "@ethersproject/abi";
                             });
 
                             rating = +star.id;
+                            console.log(rating);
                             ratingDisplay.innerText = +rating;
                             star.classList.add("is-active");
                         });
@@ -67,12 +64,11 @@ import { defaultAbiCoder } from "@ethersproject/abi";
         }
     });
 
-    let reviewSections = document.querySelectorAll(".hashpress-reviews-section");
-    reviewSections.forEach((section) => {
-        let modalToggles = section.querySelectorAll(
-            ".hashpress-reviews-write-review, .hashpress-reviews-modal__close, .hashpress-reviews-modal__bg",
-        );
-        let modal = section.querySelector(".hashpress-reviews-modal");
+    let modals = document.querySelectorAll(".hashpress-reviews-modal");
+    modals.forEach((modal) => {
+        const modalShow = modal.previousElementSibling;
+        const modalHide = modal.querySelectorAll(" .hashpress-reviews-modal__close, .hashpress-reviews-modal__bg");
+        const modalToggles = [modalShow, ...modalHide];
 
         modalToggles.forEach((toggle) => {
             toggle.addEventListener("click", () => {
@@ -92,16 +88,12 @@ import { defaultAbiCoder } from "@ethersproject/abi";
         return undefined;
     }
 
-    // async function handleReviewSubmit() {
-
-    // }
-
     async function fetchTransactionHistory() {
-        let id = hashpressReviewsAPI.postId;
+        let postId = hashpressReviewsAPI.postId;
 
         // Fetch post transaction history by post ID
         try {
-            const response = await fetch(`${hashpressReviewsAPI.getTransactionHistoryUrl}?id=${id}`, {
+            const response = await fetch(`${hashpressReviewsAPI.getTransactionHistoryUrl}?id=${postId}`, {
                 method: "GET",
                 headers: {
                     "X-WP-Nonce": hashpressReviewsAPI.nonce,
@@ -209,159 +201,20 @@ import { defaultAbiCoder } from "@ethersproject/abi";
 
                 // todo notice frontend and hide modal
 
-                let activeModal = document.querySelector(".hashpress-reviews-modal.is-active");
-                console.log(activeModal);
-                if (activeModal) {
-                    activeModal.classList.remove("is-active");
-                    body.classList.remove("hashpress-reviews-modal-open");
-                }
+                // let activeModal = document.querySelector(".hashpress-reviews-modal.is-active");
+                // console.log(activeModal);
+                // if (activeModal) {
+                //     activeModal.classList.remove("is-active");
+                //     body.classList.remove("hashpress-reviews-modal-open");
+                // }
+
+                location.href = "#reviews";
+                location.reload();
             } else {
                 console.log(receipt.status);
             }
         } catch (e) {
             console.log(e);
         }
-    }
-
-    async function loadReviews(loadModalReviews = false) {
-        let reviews;
-
-        if (loadModalReviews) {
-            reviews = document.querySelectorAll(".hashpress-reviews-modal .hashpress-reviews-review.is-loading");
-        } else {
-            reviews = document.querySelectorAll(
-                ".hashpress-reviews-section > .hashpress-reviews-list > .hashpress-reviews-review.is-loading",
-            );
-        }
-
-        console.log(reviews.length);
-
-        [...reviews].forEach(async (review) => {
-            let rId = review.id;
-            if (rId) {
-                let badge = review.querySelector(".hashpress-reviews-review__badge");
-                let icon = review.querySelector(".hashpress-reviews-review__icon");
-                let name = review.querySelector(".hashpress-reviews-review__username");
-                let stars = review.querySelectorAll(".hashpress-reviews-review__star");
-                let buyDate = review.querySelector(".hashpress-reviews-review__date1");
-                let buyDateTime = review.querySelector(".hashpress-reviews-review__date1 time");
-                let reviewDate = review.querySelector(".hashpress-reviews-review__date2");
-                let reviewDateTime = review.querySelector(".hashpress-reviews-review__date2 time");
-                let body = review.querySelector(".hashpress-reviews-review__body p");
-
-                let { network, reviewData } = await fetchMirrornodeLogData(rId);
-                let baseUrl = `https://${network}.mirrornode.hedera.com/api/v1/transactions/`;
-                let contractBaseUrl = `https://${network}.mirrornode.hedera.com/api/v1/contracts/results/`;
-
-                reviewData = JSON.parse(reviewData);
-
-                // show testnet and previewnet badge
-                if (network != "mainnet") {
-                    badge.innerText = network;
-                    badge.style.display = "block";
-                }
-
-                // set stars
-                let i = 1;
-                [...stars].forEach((star) => {
-                    if (reviewData.rating >= i) {
-                        star.classList.add("is-solid");
-                    } else {
-                        star.classList.remove("is-solid");
-                    }
-                    i += 1;
-                });
-
-                icon.innerText = reviewData.name[0].toUpperCase(); // set icon
-                name.innerText = reviewData.name; // set name
-                body.innerText = reviewData.message; // set message
-
-                // set buy date info
-                buyDate.setAttribute("href", `${baseUrl}${reviewData.transactionId}`);
-                let bId = unparseTransactionId(reviewData.transactionId);
-                let formattedBuyDate = formatTimestamp(bId.split("@")[1]);
-                buyDateTime.innerText = formattedBuyDate;
-                buyDateTime.addEventListener("mouseover", function () {
-                    buyDateTime.innerText = bId.substring(0, 7) + "..." + bId.substring(bId.length - 7);
-                });
-                buyDateTime.addEventListener("mouseout", function () {
-                    buyDateTime.innerText = formattedBuyDate;
-                });
-
-                // Set review date info
-                reviewDate.setAttribute("href", `${contractBaseUrl}${parseTransactionId(rId)}`);
-
-                let formattedReviewDate = formatTimestamp(rId.split("@")[1]);
-                reviewDateTime.innerText = formattedReviewDate;
-                reviewDateTime.addEventListener("mouseover", function () {
-                    reviewDateTime.innerText = rId.substring(0, 7) + "..." + rId.substring(rId.length - 7);
-                });
-                reviewDateTime.addEventListener("mouseout", function () {
-                    reviewDateTime.innerText = formattedReviewDate;
-                });
-
-                review.classList.remove("is-loading");
-            }
-        });
-    }
-
-    async function fetchMirrornodeLogData(transactionId) {
-        let networks = ["testnet", "mainnet", "previewnet"];
-        // console.log('fetch');
-
-        for (let network of networks) {
-            let url = `https://${network}.mirrornode.hedera.com/api/v1/contracts/results/${parseTransactionId(
-                transactionId,
-            )}`;
-
-            try {
-                const response = await fetch(url, {
-                    method: "GET",
-                    headers: {},
-                });
-                const text = await response.text(); // Parse it as text
-                const data = JSON.parse(text); // Try to parse the response as JSON
-                // The response was a JSON object
-
-                let logs = data["logs"];
-                if (logs) {
-                    for (let log of logs) {
-                        let hexData = log["data"];
-                        if (hexData) {
-                            let decodedData = await decodeHexString(hexData);
-                            return { network, reviewData: decodedData }; // just returns the first log
-                        }
-                    }
-                }
-            } catch (err) {
-                console.log(err);
-                return null;
-            }
-        }
-    }
-
-    function parseTransactionId(transactionId) {
-        let splitId = transactionId.split("@");
-        let accountId = splitId[0];
-        let timestamp = splitId[1].replace(".", "-");
-        return `${accountId}-${timestamp}`;
-    }
-
-    function unparseTransactionId(transactionId) {
-        const index = transactionId.indexOf("-");
-        let newString = transactionId.slice(0, index) + "@" + transactionId.slice(index + 1);
-        return newString.replace("-", ".");
-    }
-
-    function decodeHexString(hex) {
-        return defaultAbiCoder.decode(["string"], arrayify(hex))[0];
-    }
-
-    function formatTimestamp(secondsNanoseconds) {
-        const [seconds, nanoseconds] = secondsNanoseconds.split(".").map(Number);
-        const milliseconds = seconds * 1000 + nanoseconds / 1e6;
-        const date = new Date(milliseconds);
-        const options = { year: "numeric", month: "long" };
-        return date.toLocaleDateString(undefined, options).replace(",", "");
     }
 })();

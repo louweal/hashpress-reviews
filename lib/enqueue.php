@@ -1,10 +1,5 @@
 <?php
 
-/**
- * Template:       		enqueue.php
- * Description:    		Add CSS and Javascript to the page
- */
-
 add_action('wp_enqueue_scripts', 'enqueue_hashpress_reviews_script', 13);
 function enqueue_hashpress_reviews_script()
 {
