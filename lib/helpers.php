@@ -111,8 +111,8 @@ function hashpress_reviews_section_function($atts, $shortcode)
         // Define the default attributes
         $atts = shortcode_atts(
             array(
-                'max_reviews' =>  6,
-                'button_text' => "Write review",
+                'max_reviews' =>  4,
+                'button_text' => "All reviews",
             ),
             $atts,
             'hashpress_reviews_latest_reviews'
