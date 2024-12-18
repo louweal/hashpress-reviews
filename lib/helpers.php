@@ -219,6 +219,8 @@ function hashpress_reviews_section_function($atts, $shortcode)
                                     </button>
 
                                     <h2>Write review</h2>
+                                    <p>Note: It may take up to 2 minutes until your review can be displayed on the website.</p>
+
                                 </div>
 
                                 <div class="hashpress-reviews-modal__body">
