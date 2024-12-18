@@ -4,6 +4,9 @@ import { ContractId, ContractExecuteTransaction, ContractFunctionParameters } fr
 (function () {
     "use strict";
 
+    let hasReviewSection = document.querySelector(".hashpress-reviews-section");
+    if (!hasReviewSection) return;
+
     console.log("reviews!");
 
     let transactionHistory = undefined;
@@ -58,6 +61,12 @@ import { ContractId, ContractExecuteTransaction, ContractFunctionParameters } fr
                         let reviewString = JSON.stringify(review);
 
                         executeReviewTransaction(reviewString);
+
+                        let activeModal = document.querySelector(".hashpress-reviews-modal.is-active");
+                        if (activeModal) {
+                            activeModal.classList.remove("is-active");
+                            body.classList.remove("hashpress-reviews-modal-open");
+                        }
                     });
                 }
             }
@@ -199,17 +208,8 @@ import { ContractId, ContractExecuteTransaction, ContractFunctionParameters } fr
                 console.log("success!");
                 updateReviewHistory(transactionId);
 
-                // todo notice frontend and hide modal
-
-                // let activeModal = document.querySelector(".hashpress-reviews-modal.is-active");
-                // console.log(activeModal);
-                // if (activeModal) {
-                //     activeModal.classList.remove("is-active");
-                //     body.classList.remove("hashpress-reviews-modal-open");
-                // }
-
-                location.href = "#reviews";
-                location.reload();
+                // location.href = "#reviews";
+                // location.reload();
             } else {
                 console.log(receipt.status);
             }
