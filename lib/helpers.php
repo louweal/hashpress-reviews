@@ -192,6 +192,8 @@ function hashpress_reviews_section_function($atts, $shortcode)
                                     <div class="hashpress-reviews-list">
                                         <?php for ($i = ($num_reviews - 1); $i >= 0; $i--) {
                                             $review_transaction_id = $review_history[$i];
+                                            $review_data = fetch_mirrornode_log_data($review_transaction_id); // used in the review_file
+
                                             if (file_exists($review_file)) {
                                                 require $review_file;
                                             } else {
