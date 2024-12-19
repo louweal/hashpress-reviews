@@ -28,7 +28,9 @@ body.hashpress-reviews-modal-open {
     gap: 1rem;
     transition: all 0.3s cubic-bezier(0.2, 0, 0.2, 1);
     flex: 1 1 auto;
-    min-width: 27rem;
+    @media (min-width: 40em) {
+        min-width: 27rem;
+    }
 }
 
 .hashpress-reviews-modal .hashpress-reviews-review {
